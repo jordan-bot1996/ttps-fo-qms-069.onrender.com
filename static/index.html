@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>FO-QMS-069 — Contrôle 1ère pièce</title>
+<style>
+* { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+:root {
+  --blue:#1B4F8A; --blue2:#2E7BC4; --blue-l:#E8F0FA; --blue-ll:#F5F8FD;
+  --red:#DC3545; --red-l:#FFF0F0; --warn:#FFB300; --warn-l:#FFF8E1;
+  --grey:#F0F4F9; --stroke:#DADADA; --txt:#1A1A2E; --txt2:#6C757D;
+  --green:#28A745; --green-l:#E9F7EF;
+}
+body { font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; background:#EEF2F7; color:var(--txt); min-height:100vh; }
+.screen { display:none; min-height:100vh; }
+.screen.active { display:flex; flex-direction:column; }
+
+/* ACCUEIL */
+#screen-home { background:var(--blue); align-items:center; justify-content:center; padding:32px 20px; gap:28px; }
+.home-logo { color:white; font-size:48px; font-weight:900; text-align:center; }
+.home-logo span { display:block; width:80px; height:5px; background:var(--blue2); margin:6px auto 0; border-radius:3px; }
+.home-title { color:white; text-align:center; font-size:15px; line-height:1.6; opacity:.9; }
+.home-btns { display:flex; flex-direction:column; gap:14px; width:100%; max-width:320px; }
+.btn-home { padding:20px; border-radius:14px; border:none; font-size:17px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px; transition:transform .1s; }
+.btn-home:active { transform:scale(.97); }
+.btn-operator { background:white; color:var(--blue); }
+.btn-admin { background:rgba(255,255,255,.15); color:white; border:2px solid rgba(255,255,255,.4); }
+
+/* PIN */
+#screen-pin { background:var(--blue); align-items:center; justify-content:center; padding:32px 20px; gap:24px; }
+.pin-title { color:white; font-size:20px; font-weight:700; }
+.pin-dots { display:flex; gap:14px; }
+.pin-dot { width:18px; height:18px; border-radius:50%; background:rgba(255,255,255,.3); transition:background .15s; }
+.pin-dot.filled { background:white; }
+.pin-pad { display:grid; grid-template-columns:repeat(3,80px); gap:12px; }
+.pin-key { width:80px; height:80px; border-radius:50%; background:rgba(255,255,255,.15); border:2px solid rgba(255,255,255,.3); color:white; font-size:24px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+.pin-key:active { background:rgba(255,255,255,.35); }
+.pin-error { color:#FF6B6B; font-size:14px; min-height:20px; }
+.btn-back { color:rgba(255,255,255,.6); background:none; border:none; font-size:14px; cursor:pointer; padding:8px; }
+
+/* HEADER */
+.app-header { background:var(--blue); flex-shrink:0; }
+.app-header-bar { height:4px; background:var(--blue2); }
+.app-header-inner { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; gap:10px; }
+.header-logo { color:white; font-size:22px; font-weight:900; }
+.header-logo span { display:block; width:32px; height:2px; background:var(--blue2); margin-top:2px; border-radius:2px; }
+.header-center { color:white; text-align:center; flex:1; font-size:13px; font-weight:600; line-height:1.3; }
+.header-badge { background:var(--blue2); color:white; padding:5px 12px; border-radius:8px; font-size:11px; font-weight:700; text-align:center; }
+.header-badge small { display:block; color:rgba(255,255,255,.65); font-weight:400; font-size:9px; }
+.btn-quit { background:rgba(255,255,255,.15); border:none; color:white; padding:8px 12px; border-radius:8px; cursor:pointer; font-size:12px; }
+.btn-nav-back { background:none; border:none; color:white; font-size:22px; cursor:pointer; padding:4px; }
+
+/* LISTE */
+.list-toolbar { background:white; padding:12px 16px; display:flex; gap:10px; align-items:center; border-bottom:1px solid var(--stroke); flex-shrink:0; }
+.search-input { flex:1; padding:10px 14px; border-radius:10px; border:1.5px solid var(--stroke); font-size:15px; outline:none; background:var(--grey); }
+.search-input:focus { border-color:var(--blue2); }
+.btn-new { background:var(--blue); color:white; border:none; border-radius:10px; padding:10px 16px; font-size:14px; font-weight:700; cursor:pointer; }
+.list-body { flex:1; overflow-y:auto; padding:12px 16px; }
+.ref-card { background:white; border-radius:12px; border:1px solid var(--stroke); margin-bottom:10px; cursor:pointer; }
+.ref-card-inner { display:flex; align-items:center; padding:14px 16px; gap:12px; }
+.ref-icon { width:42px; height:42px; border-radius:10px; background:var(--blue-l); display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
+.ref-info { flex:1; }
+.ref-name { font-size:15px; font-weight:700; }
+.ref-meta { font-size:12px; color:var(--txt2); margin-top:2px; }
+.badge-locked { background:var(--blue-l); color:var(--blue); font-size:10px; font-weight:700; padding:3px 8px; border-radius:6px; }
+.badge-draft { background:#FFF3CD; color:#856404; font-size:10px; font-weight:700; padding:3px 8px; border-radius:6px; }
+.empty-state { text-align:center; padding:60px 20px; color:var(--txt2); font-size:15px; line-height:2; }
+
+/* FORM */
+.form-body { flex:1; overflow-y:auto; padding:12px 16px 90px; }
+.section-card { background:white; border-radius:12px; border:1px solid var(--stroke); margin-bottom:12px; overflow:hidden; }
+.section-head { background:var(--blue); color:white; padding:10px 14px; font-size:13px; font-weight:700; display:flex; justify-content:space-between; align-items:center; }
+.side-badge { background:var(--blue2); padding:2px 10px; border-radius:6px; font-size:11px; }
+.id-grid { display:grid; grid-template-columns:1fr 1fr; }
+.field-item { padding:10px 12px; border-bottom:1px solid var(--stroke); border-right:1px solid var(--stroke); }
+.field-item:nth-child(even) { border-right:none; }
+.field-item:nth-last-child(-n+2) { border-bottom:none; }
+.field-label { font-size:10px; font-weight:700; color:var(--blue2); text-transform:uppercase; letter-spacing:.5px; margin-bottom:4px; }
+.field-input { width:100%; border:none; background:transparent; font-size:16px; color:var(--txt); outline:none; padding:2px 0; }
+.field-input::placeholder { color:#CCC; }
+
+/* TABLEAU */
+.cote-table { width:100%; border-collapse:collapse; }
+.cote-table th { background:var(--blue2); color:white; padding:7px 4px; text-align:center; font-size:9px; font-weight:700; border-right:1px solid rgba(255,255,255,.25); }
+.cote-table th.sep { background:var(--blue); width:4px; padding:0; border:none; }
+.cote-table th:last-child { border-right:none; }
+.cote-table td { border-bottom:1px solid var(--stroke); border-right:1px solid var(--stroke); vertical-align:middle; }
+.cote-table td:last-child { border-right:none; }
+.cote-table td.sep { background:#EEF2F7!important; width:4px; border:none; padding:0; }
+.cote-table tr:nth-child(odd) td:not(.sep) { background:var(--blue-l); }
+.cote-table tr:nth-child(even) td:not(.sep) { background:var(--blue-ll); }
+.lbl-td { padding:7px 6px; font-size:11px; line-height:1.4; }
+.inp-td { padding:3px; }
+.inp-td input { width:100%; border:1.5px solid var(--blue2); border-radius:6px; padding:9px 4px; font-size:14px; font-weight:600; color:var(--txt); background:white; outline:none; text-align:center; -webkit-appearance:none; }
+.inp-td input:focus { border-color:var(--blue); box-shadow:0 0 0 3px rgba(27,79,138,.12); }
+.inp-td input.plan { background:var(--blue-l); color:var(--blue); border-color:var(--blue2); cursor:not-allowed; }
+.inp-td input.mes { background:white; border-color:var(--green); }
+
+/* MAL */
+.mal-row { display:flex; align-items:center; padding:14px; gap:12px; cursor:pointer; border-bottom:1px solid var(--stroke); }
+.cb-box { width:30px; height:30px; border-radius:8px; border:2.5px solid var(--blue2); background:white; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:18px; font-weight:700; color:white; transition:all .15s; }
+.cb-box.on { background:var(--blue2); border-color:var(--blue2); }
+.cb-box.on::after { content:'✓'; }
+.mal-text { font-size:14px; font-weight:600; color:var(--txt); }
+.lng-row { display:grid; grid-template-columns:1fr 1fr; }
+.lng-cell { padding:12px; border-right:1px solid var(--stroke); }
+.lng-cell:last-child { border-right:none; }
+.lng-label { font-size:10px; font-weight:700; color:var(--red); text-transform:uppercase; margin-bottom:4px; }
+.lng-val { font-size:22px; font-weight:700; color:var(--red); }
+.lng-val small { font-size:12px; font-weight:400; color:var(--txt2); margin-left:3px; }
+
+/* ACTION BAR */
+.action-bar { position:fixed; bottom:0; left:0; right:0; background:white; border-top:1px solid var(--stroke); padding:12px 16px; display:flex; gap:10px; z-index:10; }
+.btn-action { flex:1; padding:14px 8px; border-radius:10px; border:none; font-size:13px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:5px; }
+.btn-action:active { opacity:.8; }
+.btn-primary { background:var(--blue); color:white; }
+.btn-success { background:var(--green); color:white; }
+.btn-danger { background:var(--red-l); color:var(--red); border:1.5px solid var(--red); }
+.btn-secondary { background:var(--grey); color:var(--txt2); border:1.5px solid var(--stroke); }
+
+/* MODAL */
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.5); display:flex; align-items:center; justify-content:center; z-index:100; padding:20px; }
+.modal-overlay.hidden { display:none; }
+.modal-box { background:var(--blue); border-radius:20px; padding:28px 24px; width:100%; max-width:320px; display:flex; flex-direction:column; align-items:center; gap:20px; }
+.modal-title { color:white; font-size:18px; font-weight:700; text-align:center; }
+
+/* TOAST */
+.toast { position:fixed; bottom:90px; left:50%; transform:translateX(-50%); background:#1A1A2E; color:white; padding:12px 20px; border-radius:10px; font-size:14px; font-weight:600; z-index:200; opacity:0; transition:opacity .3s; pointer-events:none; white-space:nowrap; }
+.toast.show { opacity:1; }
+</style>
+</head>
+<body>
+
+<!-- ══ ACCUEIL ══ -->
+<div id="screen-home" class="screen active">
+  <div class="home-logo">TAC<span></span></div>
+  <div class="home-title">Formulaire de contrôle 1ère pièce<br><strong>FO-QMS-069 — Rétreint</strong></div>
+  <div class="home-btns">
+    <button class="btn-home btn-operator" onclick="goOp()">👷 Mode Opérateur</button>
+    <button class="btn-home btn-admin" onclick="showPin()">🔐 Mode Admin</button>
+  </div>
+</div>
+
+<!-- ══ PIN ══ -->
+<div id="screen-pin" class="screen">
+  <div class="pin-title">Code administrateur</div>
+  <div class="pin-dots">
+    <div class="pin-dot" id="d0"></div><div class="pin-dot" id="d1"></div>
+    <div class="pin-dot" id="d2"></div><div class="pin-dot" id="d3"></div>
+  </div>
+  <div class="pin-pad">
+    <button class="pin-key" onclick="pk('1')">1</button><button class="pin-key" onclick="pk('2')">2</button><button class="pin-key" onclick="pk('3')">3</button>
+    <button class="pin-key" onclick="pk('4')">4</button><button class="pin-key" onclick="pk('5')">5</button><button class="pin-key" onclick="pk('6')">6</button>
+    <button class="pin-key" onclick="pk('7')">7</button><button class="pin-key" onclick="pk('8')">8</button><button class="pin-key" onclick="pk('9')">9</button>
+    <button class="pin-key"></button><button class="pin-key" onclick="pk('0')">0</button><button class="pin-key" onclick="pd()">⌫</button>
+  </div>
+  <div class="pin-error" id="pin-err"></div>
+  <button class="btn-back" onclick="go('screen-home')">← Retour</button>
+</div>
+
+<!-- ══ LISTE ADMIN ══ -->
+<div id="screen-list" class="screen">
+  <div class="app-header">
+    <div class="app-header-inner">
+      <div class="header-logo">TAC<span></span></div>
+      <div class="header-center">Références — Admin</div>
+      <button class="btn-quit" onclick="go('screen-home')">Quitter</button>
+    </div><div class="app-header-bar"></div>
+  </div>
+  <div class="list-toolbar">
+    <input class="search-input" type="text" placeholder="🔍 Rechercher…" oninput="filterAdmin(this.value)">
+    <button class="btn-new" onclick="newRef()">+ Nouvelle</button>
+  </div>
+  <div class="list-body" id="admin-list"></div>
+</div>
+
+<!-- ══ FORMULAIRE ADMIN ══ -->
+<div id="screen-form" class="screen">
+  <div class="app-header">
+    <div class="app-header-inner">
+      <button class="btn-nav-back" onclick="go('screen-list');renderAdmin()">←</button>
+      <div class="header-center" id="form-title">Nouvelle référence</div>
+      <div class="header-badge">ADMIN<small>FO-QMS-069</small></div>
+    </div><div class="app-header-bar"></div>
+  </div>
+  <div class="form-body">
+
+    <div class="section-card">
+      <div class="section-head">Identification</div>
+      <div class="id-grid">
+        <div class="field-item"><div class="field-label">Référence pièce *</div><input class="field-input" id="f-ref" placeholder="ex: REF-001"></div>
+        <div class="field-item"><div class="field-label">Désignation</div><input class="field-input" id="f-des" placeholder="ex: Tube rétreint"></div>
+        <div class="field-item"><div class="field-label">N° Op gamme RH</div><input class="field-input" id="f-rh-op" placeholder="ex: 10"></div>
+        <div class="field-item"><div class="field-label">N° Op gamme LH</div><input class="field-input" id="f-lh-op" placeholder="ex: 20"></div>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-head">Cotes plan — Côté RH <div class="side-badge">RH</div></div>
+      <table class="cote-table">
+        <thead><tr>
+          <th style="text-align:left;width:26%">Contrôle</th>
+          <th>Val. minimum</th>
+          <th>Val. mesurée</th>
+          <th class="sep"></th>
+          <th style="text-align:left;width:22%">Contrôle</th>
+          <th>Val. du plan</th>
+          <th>Val. mesurée</th>
+        </tr></thead>
+        <tbody>
+          <tr>
+            <td class="lbl-td" rowspan="2">Ø intérieur<br><small>svt OP-PRO-098</small></td>
+            <td class="inp-td" rowspan="2"><input type="number" id="p-rh-di-min" step="0.01" placeholder="0.00" inputmode="decimal"></td>
+            <td class="inp-td" rowspan="2"><input type="text" placeholder="—" disabled style="background:#f0f4f9;border-color:#ddd;cursor:not-allowed;"></td>
+            <td class="sep" rowspan="2"></td>
+            <td class="lbl-td">Long. plat rétreint</td>
+            <td class="inp-td"><input type="number" id="p-rh-lpl" step="0.01" placeholder="0.00" inputmode="decimal"></td>
+            <td class="inp-td"><input type="text" placeholder="—" disabled style="background:#f0f4f9;border-color:#ddd;cursor:not-allowed;"></td>
+          </tr>
+          <tr>
+            <td class="lbl-td">Longueur totale</td>
+            <td class="inp-td"><input type="number" id="p-rh-lt" step="0.01" placeholder="0.00" inputmode="decimal"></td>
+            <td class="inp-td"><input type="text" placeholder="—" disabled style="background:#f0f4f9;border-color:#ddd;cursor:not-allowed;"></td>
+          </tr>
+          <tr>
+            <td class="lbl-td">Ø extérieur</td>
+            <td class="inp-td"><input type="number" id="p-rh-de-min" step="0.01" placeholder="0.00" inputmode="decimal"></td>
+            <td class="inp-td"><input type="text" placeholder="—" disabled style="background:#f0f4f9;border-color:#ddd;cursor:not-allowed;"></td>
+            <td class="sep"></td>
+            <td class="lbl-td">Angle de rétreint<br><small style="color:#6C757D">Angle 1 / Angle 2</small></td>
+            <td class="inp-td" style="padding:2px;">
+              <input type="number" id="p-rh-ang1" step="0.01" placeholder="Angle 1" inputmode="decimal" style="margin-bottom:3px;">
+              <input type="number" id="p-rh-ang2" step="0.01" placeholder="Angle 2" inputmode="decimal">
+            </td>
+            <td class="inp-td"><input type="text" placeholder="—" disabled style="background:#f0f4f9;border-color:#ddd;cursor:not-allowed;"></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section-card">
+      <div class="section-head">Cotes plan — Côté LH <div class="side-badge">LH</div></div>
+      <table class="cote-table">
+        <thead><tr>
+          <th style="text-align:left;width:26%">Contrôle</th>
+          <th>Val. minimum</th>
+          <th>Val. mesurée</th>
+          <th class="sep"></th>
+          <th style="text-align:left;width:22%">Contrôle</th>
+          <th>Val. du plan</th>
+          <th>Val. mesurée</th>
+        </tr></thead>
+        <tbody>
+          <tr>
+            <td class="lbl-td" rowspan="2">Ø intérieur<br><small>svt OP-PRO-098</small></td>
+            <td class="inp-td" rowspan="2"><input type="number" id="p-lh-di-min" step="0.01" placeholder="0.00" inputmode="decimal"></td>
+            <td class="inp-td" rowspan="2"><input type="text" placeholder="—" disabled style="background:#f0f4f9;border-color:#ddd;cursor:not-allowed;"></td>
+            <td class="sep" rowspan="2"></td>
+            <td class="lbl-td">Long. plat rétreint</td>
+            <td class="inp-td"><input type="number" id="p-lh-lpl" step="0.01" placeholder="0.00" inputmode="decimal"></td>
+            <td class="inp-td"><input type="text" placeholder="—" disabled style="background:#f0f4f9;border-color:#ddd;cursor:not-allowed;"></td>
+          </tr>
+          <tr>
+            <td class="lbl-td">Longueur totale</td>
+            <td class="inp-td"><input type="number" id="p-lh-lt" step="0.01" placeholder="0.00" inputmode="decimal"></td>
+            <td class="inp-td"><input type="text" placeholder="—" disabled style="background:#f0f4f9;border-color:#ddd;cursor:not-allowed;"></td>
+          </tr>
+          <tr>
+            <td class="lbl-td">Ø extérieur</td>
+            <td class="inp-td"><input type="number" id="p-lh-de-min" step="0.01" placeholder="0.00" inputmode="decimal"></td>
+            <td class="inp-td"><input type="text" placeholder="—" disabled style="background:#f0f4f9;border-color:#ddd;cursor:not-allowed;"></td>
+            <td class="sep"></td>
+            <td class="lbl-td">Angle de rétreint<br><small style="color:#6C757D">Angle 1 / Angle 2</small></td>
+            <td class="inp-td" style="padding:2px;">
+              <input type="number" id="p-lh-ang1" step="0.01" placeholder="Angle 1" inputmode="decimal" style="margin-bottom:3px;">
+              <input type="number" id="p-lh-ang2" step="0.01" placeholder="Angle 2" inputmode="decimal">
+            </td>
+            <td class="inp-td"><input type="text" placeholder="—" disabled style="background:#f0f4f9;border-color:#ddd;cursor:not-allowed;"></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="action-bar">
+    <button class="btn-action btn-danger" id="btn-del" onclick="deleteRef()" style="display:none">🗑</button>
+    <button class="btn-action btn-secondary" onclick="saveRef()">💾 Enregistrer</button>
+    <button class="btn-action btn-success" onclick="genPDF()">📄 Générer PDF</button>
+  </div>
+</div>
+
+<!-- ══ LISTE OPÉRATEUR ══ -->
+<div id="screen-op-list" class="screen">
+  <div class="app-header">
+    <div class="app-header-inner">
+      <div class="header-logo">TAC<span></span></div>
+      <div class="header-center">Choisir une référence</div>
+      <button class="btn-quit" onclick="go('screen-home')">Quitter</button>
+    </div><div class="app-header-bar"></div>
+  </div>
+  <div class="list-toolbar">
+    <input class="search-input" type="text" placeholder="🔍 Rechercher une référence…" oninput="filterOp(this.value)">
+  </div>
+  <div class="list-body" id="op-list"></div>
+</div>
+
+<!-- ══ FORMULAIRE OPÉRATEUR ══ -->
+<div id="screen-op-form" class="screen">
+  <div class="app-header">
+    <div class="app-header-inner">
+      <button class="btn-nav-back" onclick="go('screen-op-list');renderOp()">←</button>
+      <div class="header-center" id="op-title">—</div>
+      <div class="header-badge">FO-QMS-069<small>Opérateur</small></div>
+    </div><div class="app-header-bar"></div>
+  </div>
+  <div class="form-body">
+
+    <div class="section-card">
+      <div class="section-head">Identification</div>
+      <div class="id-grid">
+        <div class="field-item"><div class="field-label">N° OF</div><input class="field-input" id="op-nof" placeholder="Saisir…"></div>
+        <div class="field-item"><div class="field-label">Machine</div><input class="field-input" id="op-machine" placeholder="Saisir…"></div>
+        <div class="field-item"><div class="field-label">Cachet RH</div><input class="field-input" id="op-crh" placeholder="Initiales…"></div>
+        <div class="field-item"><div class="field-label">Cachet LH</div><input class="field-input" id="op-clh" placeholder="Initiales…"></div>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-head">Mise à longueur</div>
+      <div class="mal-row" onclick="toggleMAL()">
+        <div class="cb-box" id="mal-cb"></div>
+        <div class="mal-text">Mise à longueur effectuée</div>
+      </div>
+      <div class="lng-row">
+        <div class="lng-cell"><div class="lng-label">À reprendre côté RH</div><div class="lng-val" id="lng-rh">—<small> mm</small></div></div>
+        <div class="lng-cell"><div class="lng-label">À reprendre côté LH</div><div class="lng-val" id="lng-lh">—<small> mm</small></div></div>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-head">Rétreint côté RH <div class="side-badge">RH</div></div>
+      <table class="cote-table">
+        <thead><tr>
+          <th style="text-align:left;width:26%">Contrôle</th>
+          <th>Val. min.</th><th>Val. mesurée</th>
+          <th class="sep"></th>
+          <th style="text-align:left;width:20%">Contrôle</th>
+          <th>Val. plan</th><th>Val. mesurée</th>
+        </tr></thead>
+        <tbody>
+          <tr>
+            <td class="lbl-td" rowspan="2">Ø intérieur<br><small>svt OP-PRO-098</small></td>
+            <td class="inp-td" rowspan="2"><input class="plan" type="text" id="v-rh-di-min" disabled></td>
+            <td class="inp-td" rowspan="2"><input class="mes" type="number" id="m-rh-di" step="0.01" placeholder="0.00" inputmode="decimal"></td>
+            <td class="sep" rowspan="2"></td>
+            <td class="lbl-td">Long. plat rétreint</td>
+            <td class="inp-td"><input class="plan" type="text" id="v-rh-lpl" disabled></td>
+            <td class="inp-td"><input class="mes" type="number" id="m-rh-lpl" step="0.01" placeholder="0.00" inputmode="decimal"></td>
+          </tr>
+          <tr>
+            <td class="lbl-td">Longueur totale</td>
+            <td class="inp-td"><input class="plan" type="text" id="v-rh-lt" disabled></td>
+            <td class="inp-td"><input class="mes" type="number" id="m-rh-lt" step="0.01" placeholder="0.00" inputmode="decimal" oninput="calcLng()"></td>
+          </tr>
+          <tr>
+            <td class="lbl-td">Ø extérieur</td>
+            <td class="inp-td"><input class="plan" type="text" id="v-rh-de-min" disabled></td>
+            <td class="inp-td"><input class="mes" type="number" id="m-rh-de" step="0.01" placeholder="0.00" inputmode="decimal"></td>
+            <td class="sep"></td>
+            <td class="lbl-td">Angle de rétreint</td>
+            <td class="inp-td" style="padding:2px;"><input class="plan" type="text" id="v-rh-ang1" disabled style="margin-bottom:3px;"><input class="plan" type="text" id="v-rh-ang2" disabled></td>
+            <td class="inp-td"><input class="mes" type="number" id="m-rh-ang" step="0.01" placeholder="0.00" inputmode="decimal"></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section-card">
+      <div class="section-head">Rétreint côté LH <div class="side-badge">LH</div></div>
+      <table class="cote-table">
+        <thead><tr>
+          <th style="text-align:left;width:26%">Contrôle</th>
+          <th>Val. min.</th><th>Val. mesurée</th>
+          <th class="sep"></th>
+          <th style="text-align:left;width:20%">Contrôle</th>
+          <th>Val. plan</th><th>Val. mesurée</th>
+        </tr></thead>
+        <tbody>
+          <tr>
+            <td class="lbl-td" rowspan="2">Ø intérieur<br><small>svt OP-PRO-098</small></td>
+            <td class="inp-td" rowspan="2"><input class="plan" type="text" id="v-lh-di-min" disabled></td>
+            <td class="inp-td" rowspan="2"><input class="mes" type="number" id="m-lh-di" step="0.01" placeholder="0.00" inputmode="decimal"></td>
+            <td class="sep" rowspan="2"></td>
+            <td class="lbl-td">Long. plat rétreint</td>
+            <td class="inp-td"><input class="plan" type="text" id="v-lh-lpl" disabled></td>
+            <td class="inp-td"><input class="mes" type="number" id="m-lh-lpl" step="0.01" placeholder="0.00" inputmode="decimal"></td>
+          </tr>
+          <tr>
+            <td class="lbl-td">Longueur totale</td>
+            <td class="inp-td"><input class="plan" type="text" id="v-lh-lt" disabled></td>
+            <td class="inp-td"><input class="mes" type="number" id="m-lh-lt" step="0.01" placeholder="0.00" inputmode="decimal" oninput="calcLng()"></td>
+          </tr>
+          <tr>
+            <td class="lbl-td">Ø extérieur</td>
+            <td class="inp-td"><input class="plan" type="text" id="v-lh-de-min" disabled></td>
+            <td class="inp-td"><input class="mes" type="number" id="m-lh-de" step="0.01" placeholder="0.00" inputmode="decimal"></td>
+            <td class="sep"></td>
+            <td class="lbl-td">Angle de rétreint</td>
+            <td class="inp-td" style="padding:2px;"><input class="plan" type="text" id="v-lh-ang1" disabled style="margin-bottom:3px;"><input class="plan" type="text" id="v-lh-ang2" disabled></td>
+            <td class="inp-td"><input class="mes" type="number" id="m-lh-ang" step="0.01" placeholder="0.00" inputmode="decimal"></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="action-bar">
+    <button class="btn-action btn-secondary" onclick="resetOp()">🗑 Effacer</button>
+    <button class="btn-action btn-success" onclick="exportPDF()">📄 Générer PDF</button>
+  </div>
+</div>
+
+<!-- MODAL PIN -->
+<div class="modal-overlay hidden" id="modal-pin">
+  <div class="modal-box">
+    <div class="modal-title" id="modal-title">Code admin requis</div>
+    <div class="pin-dots">
+      <div class="pin-dot" id="md0"></div><div class="pin-dot" id="md1"></div>
+      <div class="pin-dot" id="md2"></div><div class="pin-dot" id="md3"></div>
+    </div>
+    <div class="pin-pad">
+      <button class="pin-key" onclick="mpk('1')">1</button><button class="pin-key" onclick="mpk('2')">2</button><button class="pin-key" onclick="mpk('3')">3</button>
+      <button class="pin-key" onclick="mpk('4')">4</button><button class="pin-key" onclick="mpk('5')">5</button><button class="pin-key" onclick="mpk('6')">6</button>
+      <button class="pin-key" onclick="mpk('7')">7</button><button class="pin-key" onclick="mpk('8')">8</button><button class="pin-key" onclick="mpk('9')">9</button>
+      <button class="pin-key"></button><button class="pin-key" onclick="mpk('0')">0</button><button class="pin-key" onclick="mpd()">⌫</button>
+    </div>
+    <div class="pin-error" id="mp-err"></div>
+    <button class="btn-back" onclick="closeModal()">Annuler</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const PIN='1234', DB='tac_v3';
+let pinB='', curId=null, malFait=false, mpB='', mpCb=null;
+
+const db=()=>{try{return JSON.parse(localStorage.getItem(DB))||[];}catch{return[];}};
+const sdb=r=>localStorage.setItem(DB,JSON.stringify(r));
+const gi=id=>document.getElementById(id);
+const gv=id=>gi(id)?.value||'';
+const sv=(id,v)=>{const e=gi(id);if(e)e.value=v||'';};
+const toast=(m,d=2000)=>{const t=gi('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),d);};
+
+function go(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));gi(id).classList.add('active');}
+function goOp(){go('screen-op-list');renderOp();}
+
+// PIN principal
+function showPin(){pinB='';updDots(pinB,'d');gi('pin-err').textContent='';go('screen-pin');}
+function pk(k){if(!k||pinB.length>=4)return;pinB+=k;updDots(pinB,'d');if(pinB.length===4){if(pinB===PIN){pinB='';go('screen-list');renderAdmin();}else{gi('pin-err').textContent='Code incorrect';setTimeout(()=>{pinB='';updDots(pinB,'d');gi('pin-err').textContent='';},800);}}}
+function pd(){pinB=pinB.slice(0,-1);updDots(pinB,'d');}
+function updDots(b,p){for(let i=0;i<4;i++)gi(p+i).classList.toggle('filled',i<b.length);}
+
+// Modal PIN
+function showModal(t,cb){mpB='';mpCb=cb;updDots(mpB,'md');gi('mp-err').textContent='';gi('modal-title').textContent=t;gi('modal-pin').classList.remove('hidden');}
+function closeModal(){gi('modal-pin').classList.add('hidden');}
+function mpk(k){if(!k||mpB.length>=4)return;mpB+=k;updDots(mpB,'md');if(mpB.length===4){if(mpB===PIN){closeModal();if(mpCb)mpCb();}else{gi('mp-err').textContent='Code incorrect';setTimeout(()=>{mpB='';updDots(mpB,'md');gi('mp-err').textContent='';},800);}}}
+function mpd(){mpB=mpB.slice(0,-1);updDots(mpB,'md');}
+
+// Admin liste
+function renderAdmin(f=''){
+  const refs=db(),fl=f.toLowerCase();
+  const fil=refs.filter(r=>r.ref.toLowerCase().includes(fl)||(r.des||'').toLowerCase().includes(fl));
+  gi('admin-list').innerHTML=fil.length?fil.map(r=>`<div class="ref-card" onclick="editRef('${r.id}')"><div class="ref-card-inner"><div class="ref-icon">🔩</div><div class="ref-info"><div class="ref-name">${r.ref}</div><div class="ref-meta">${r.des||'Sans désignation'}</div></div><span class="${r.locked?'badge-locked':'badge-draft'}">${r.locked?'🔒 Verrouillé':'✏️ Brouillon'}</span></div></div>`).join(''):'<div class="empty-state">📋<br>'+(f?'Aucun résultat':'Aucune référence — créez-en une !')+'</div>';
+}
+function filterAdmin(v){renderAdmin(v);}
+
+function newRef(){
+  curId=null;
+  ['f-ref','f-des','f-rh-op','f-lh-op','p-rh-di-min','p-rh-lpl','p-rh-lt','p-rh-de-min','p-rh-ang','p-lh-di-min','p-lh-lpl','p-lh-lt','p-lh-de-min','p-lh-ang']
+    .forEach(id=>sv(id,''));
+  gi('form-title').textContent='Nouvelle référence';
+  gi('btn-del').style.display='none';
+  go('screen-form');
+}
+
+function editRef(id){
+  const r=db().find(x=>x.id===id);if(!r)return;
+  curId=id; const p=r.plan||{};
+  sv('f-ref',r.ref);sv('f-des',r.des);sv('f-rh-op',r.rhOp);sv('f-lh-op',r.lhOp);
+  sv('p-rh-di-min',p.rh_di_min);sv('p-rh-lpl',p.rh_lpl);sv('p-rh-lt',p.rh_lt);sv('p-rh-de-min',p.rh_de_min);sv('p-rh-ang1',p.rh_ang1);sv('p-rh-ang2',p.rh_ang2);
+  sv('p-lh-di-min',p.lh_di_min);sv('p-lh-lpl',p.lh_lpl);sv('p-lh-lt',p.lh_lt);sv('p-lh-de-min',p.lh_de_min);sv('p-lh-ang1',p.lh_ang1);sv('p-lh-ang2',p.lh_ang2);
+  gi('form-title').textContent=r.ref;
+  gi('btn-del').style.display='';
+  go('screen-form');
+}
+
+function getForm(){
+  return {ref:gv('f-ref'),des:gv('f-des'),rhOp:gv('f-rh-op'),lhOp:gv('f-lh-op'),
+    plan:{rh_di_min:gv('p-rh-di-min'),rh_lpl:gv('p-rh-lpl'),rh_lt:gv('p-rh-lt'),rh_de_min:gv('p-rh-de-min'),rh_ang1:gv('p-rh-ang1'),rh_ang2:gv('p-rh-ang2'),
+          lh_di_min:gv('p-lh-di-min'),lh_lpl:gv('p-lh-lpl'),lh_lt:gv('p-lh-lt'),lh_de_min:gv('p-lh-de-min'),lh_ang1:gv('p-lh-ang1'),lh_ang2:gv('p-lh-ang2')}};
+}
+
+function saveRef(){
+  const d=getForm();if(!d.ref.trim()){toast('⚠ Référence obligatoire');return;}
+  const refs=db();
+  if(curId){const i=refs.findIndex(r=>r.id===curId);if(i>=0)refs[i]={...refs[i],...d};}
+  else{curId='r'+Date.now();refs.push({id:curId,locked:false,...d});gi('btn-del').style.display='';}
+  sdb(refs);gi('form-title').textContent=d.ref;toast('✓ Enregistré !');
+}
+
+function deleteRef(){
+  if(!curId)return;
+  showModal('Confirmer la suppression',()=>{sdb(db().filter(r=>r.id!==curId));go('screen-list');renderAdmin();toast('🗑 Supprimé');});
+}
+
+// Génération PDF admin (cotes plan pré-remplies, cases mesures vides)
+async function genPDF(){
+  const d=getForm();
+  if(!d.ref.trim()){toast('⚠ Remplissez la référence');return;}
+  const refs=db();
+  if(curId){const i=refs.findIndex(r=>r.id===curId);if(i>=0)refs[i]={...refs[i],...d,locked:true};}
+  else{curId='r'+Date.now();refs.push({id:curId,locked:true,...d});}
+  sdb(refs);
+  toast('⏳ Génération PDF interactif…',5000);
+  try{
+    const resp=await fetch('/gen_pdf',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d)});
+    if(!resp.ok)throw new Error('Erreur serveur '+resp.status);
+    const blob=await resp.blob();
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url; a.download='FO-QMS-069_'+d.ref.replace(/[^a-zA-Z0-9_-]/g,'_')+'.pdf';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url),5000);
+    toast('✅ PDF interactif téléchargé !',3000);
+  }catch(e){toast('❌ '+e.message,4000);}
+}
+
+// Opérateur
+function renderOp(f=''){
+  const refs=db().filter(r=>r.locked),fl=f.toLowerCase();
+  const fil=refs.filter(r=>r.ref.toLowerCase().includes(fl)||(r.des||'').toLowerCase().includes(fl));
+  gi('op-list').innerHTML=fil.length?fil.map(r=>`<div class="ref-card" onclick="selRef('${r.id}')"><div class="ref-card-inner"><div class="ref-icon">🔩</div><div class="ref-info"><div class="ref-name">${r.ref}</div><div class="ref-meta">${r.des||''}</div></div><span style="color:var(--blue2);font-size:20px;">→</span></div></div>`).join(''):'<div class="empty-state">📋<br>'+(f?'Aucun résultat':'Aucune référence disponible')+'</div>';
+}
+function filterOp(v){renderOp(v);}
+
+function selRef(id){
+  const r=db().find(x=>x.id===id);if(!r)return;
+  curId=id; const p=r.plan||{};
+  gi('op-title').textContent=r.ref;
+  sv('v-rh-di-min',p.rh_di_min);sv('v-rh-lpl',p.rh_lpl);sv('v-rh-lt',p.rh_lt);sv('v-rh-de-min',p.rh_de_min);sv('v-rh-ang1',p.rh_ang1);sv('v-rh-ang2',p.rh_ang2);
+  sv('v-lh-di-min',p.lh_di_min);sv('v-lh-lpl',p.lh_lpl);sv('v-lh-lt',p.lh_lt);sv('v-lh-de-min',p.lh_de_min);sv('v-lh-ang1',p.lh_ang1);sv('v-lh-ang2',p.lh_ang2);
+  ['op-nof','op-machine','op-crh','op-clh','m-rh-di','m-rh-lpl','m-rh-lt','m-rh-de','m-rh-ang','m-lh-di','m-lh-lpl','m-lh-lt','m-lh-de','m-lh-ang']
+    .forEach(id=>sv(id,''));
+  malFait=false;gi('mal-cb').classList.remove('on');
+  gi('lng-rh').innerHTML='—<small> mm</small>';gi('lng-lh').innerHTML='—<small> mm</small>';
+  go('screen-op-form');
+}
+
+function toggleMAL(){malFait=!malFait;gi('mal-cb').classList.toggle('on',malFait);calcLng();}
+
+function vn(id){const x=parseFloat(gi(id)?.value);return isNaN(x)?null:x;}
+
+function calcLng(){
+  let rh=null,lh=null;
+  const ltP=vn('v-rh-lt')||vn('v-lh-lt');
+  const ltM=vn('m-rh-lt')||vn('m-lh-lt');
+  if(malFait){rh=2.00;if(ltP!==null&&ltM!==null)lh=ltM-ltP-2;}
+  else{if(ltP!==null&&ltM!==null){const x=(ltM-ltP)/2;rh=x;lh=x;}}
+  const fmt=x=>x===null?'—<small> mm</small>':x.toFixed(2)+'<small> mm</small>';
+  gi('lng-rh').innerHTML=fmt(rh);gi('lng-lh').innerHTML=fmt(lh);
+}
+
+function resetOp(){
+  ['op-nof','op-machine','op-crh','op-clh','m-rh-di','m-rh-lpl','m-rh-lt','m-rh-de','m-rh-ang','m-lh-di','m-lh-lpl','m-lh-lt','m-lh-de','m-lh-ang']
+    .forEach(id=>sv(id,''));
+  malFait=false;gi('mal-cb').classList.remove('on');
+  gi('lng-rh').innerHTML='—<small> mm</small>';gi('lng-lh').innerHTML='—<small> mm</small>';
+  toast('✓ Effacé');
+}
+
+async function exportPDF(){
+  const refs=db(); const r=refs.find(x=>x.id===curId)||{};
+  const lRH=gi('lng-rh').textContent.replace('mm','').trim();
+  const lLH=gi('lng-lh').textContent.replace('mm','').trim();
+  const payload={...r, op:{
+    nof:gv('op-nof'),machine:gv('op-machine'),crh:gv('op-crh'),clh:gv('op-clh'),
+    rh:{di:gv('m-rh-di'),lpl:gv('m-rh-lpl'),lt:gv('m-rh-lt'),de:gv('m-rh-de'),ang:gv('m-rh-ang')},
+    lh:{di:gv('m-lh-di'),lpl:gv('m-lh-lpl'),lt:gv('m-lh-lt'),de:gv('m-lh-de'),ang:gv('m-lh-ang')},
+    mal:malFait, lngRH:lRH, lngLH:lLH
+  }};
+  toast('⏳ Génération PDF…',5000);
+  try{
+    const resp=await fetch('/gen_pdf',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    if(!resp.ok)throw new Error('Erreur serveur '+resp.status);
+    const blob=await resp.blob();
+    const url=URL.createObjectURL(blob);
+    const nof=(gv('op-nof')||'OF').replace(/[^a-zA-Z0-9_-]/g,'_');
+    const a=document.createElement('a');
+    a.href=url; a.download='FO-QMS-069_'+(r.ref||'REF').replace(/[^a-zA-Z0-9_-]/g,'_')+'_'+nof+'.pdf';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url),5000);
+    toast('✅ PDF téléchargé !',3000);
+  }catch(e){toast('❌ '+e.message,4000);}
+}
+
+// ── GÉNÉRATION PDF ──────────────────────────────────────────────────
+function printFiche(data, op) {
+  const p=data.plan||{};
+  const isTemplate=!op;
+
+  const planCell=(v)=>`<td style="padding:3px;"><div style="background:#E8F0FA;border:1.5px solid #2E7BC4;border-radius:4px;padding:6px 4px;text-align:center;font-weight:700;color:#1B4F8A;font-size:9pt;min-height:20pt;">${v||''}</div></td>`;
+  const mesCell=(v)=>`<td style="padding:3px;"><div style="background:white;border:1.5px solid #28A745;border-radius:4px;padding:6px 4px;text-align:center;font-size:9pt;min-height:20pt;">${isTemplate?'':v||''}</div></td>`;
+
+  const section=(side)=>{
+    const s=side.toLowerCase();
+    const pm=side==='RH'?{di_min:p.rh_di_min,lpl:p.rh_lpl,lt:p.rh_lt,de_min:p.rh_de_min,ang:p.rh_ang}:{di_min:p.lh_di_min,lpl:p.lh_lpl,lt:p.lh_lt,de_min:p.lh_de_min,ang:p.lh_ang};
+    const mm=isTemplate?{}:(side==='RH'?op.rh:op.lh);
+    return `
+    <div style="margin-bottom:8px;border-radius:6px;overflow:hidden;border:1px solid #DADADA;">
+      <div style="background:#1B4F8A;color:white;padding:7px 12px;font-size:10pt;font-weight:700;">Rétreint côté ${side}</div>
+      <table style="width:100%;border-collapse:collapse;font-size:8pt;">
+        <thead><tr style="background:#2E7BC4;">
+          <th style="color:white;padding:6px 4px;text-align:left;width:26%;border-right:1px solid rgba(255,255,255,.25);">Type de contrôle</th>
+          <th style="color:white;padding:6px 4px;text-align:center;border-right:1px solid rgba(255,255,255,.25);">Val. minimum</th>
+          <th style="color:white;padding:6px 4px;text-align:center;border-right:1px solid rgba(255,255,255,.25);">Val. mesurée</th>
+          <th style="background:#1B4F8A;width:5px;padding:0;"></th>
+          <th style="color:white;padding:6px 4px;text-align:left;width:22%;border-right:1px solid rgba(255,255,255,.25);">Type de contrôle</th>
+          <th style="color:white;padding:6px 4px;text-align:center;border-right:1px solid rgba(255,255,255,.25);">Val. du plan</th>
+          <th style="color:white;padding:6px 4px;text-align:center;">Val. mesurée</th>
+        </tr></thead>
+        <tbody>
+          <tr style="background:#E8F0FA;">
+            <td style="padding:6px;font-size:8pt;line-height:1.4;border-bottom:1px solid #DADADA;border-right:1px solid #DADADA;" rowspan="2">Ø intérieur svt OP-PRO-098<br><span style="font-size:7pt;color:#6C757D;">0,15 mm min. en dessous du Ø d'alésage</span></td>
+            ${planCell(pm.di_min)}
+            ${mesCell(mm.di)}
+            <td style="background:#EEF2F7;width:5px;border:none;" rowspan="2"></td>
+            <td style="padding:6px;font-size:8pt;border-bottom:1px solid #DADADA;border-right:1px solid #DADADA;">Long. plat rétreint</td>
+            ${planCell(pm.lpl)}
+            ${mesCell(mm.lpl)}
+          </tr>
+          <tr style="background:#F5F8FD;">
+            <td style="padding:3px;border-bottom:1px solid #DADADA;border-right:1px solid #DADADA;" rowspan="1"></td>
+            <td style="padding:3px;border-bottom:1px solid #DADADA;border-right:1px solid #DADADA;"></td>
+            <td style="padding:6px;font-size:8pt;border-bottom:1px solid #DADADA;border-right:1px solid #DADADA;">Longueur totale</td>
+            ${planCell(pm.lt)}
+            ${mesCell(mm.lt)}
+          </tr>
+          <tr style="background:#E8F0FA;">
+            <td style="padding:6px;font-size:8pt;border-right:1px solid #DADADA;">Ø extérieur</td>
+            ${planCell(pm.de_min)}
+            ${mesCell(mm.de)}
+            <td style="background:#EEF2F7;width:5px;border:none;"></td>
+            <td style="padding:6px;font-size:8pt;border-right:1px solid #DADADA;">Angle de rétreint</td>
+            ${planCell(pm.ang)}
+            ${mesCell(mm.ang)}
+          </tr>
+        </tbody>
+      </table>
+    </div>`;
+  };
+
+  const html=`<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:Arial,sans-serif;font-size:9pt;color:#1A1A2E;}
+.page{width:210mm;padding:10mm;}
+@media print{body{margin:0;}@page{size:A4;margin:10mm;}}
+</style></head><body><div class="page">
+
+<div style="background:#1B4F8A;color:white;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">
+  <div><div style="font-size:20pt;font-weight:900;">TAC</div><div style="width:30px;height:2px;background:#2E7BC4;margin-top:3px;"></div></div>
+  <div style="font-size:12pt;font-weight:700;text-align:center;flex:1;">Formulaire de contrôle 1ère pièce — Rétreint</div>
+  <div style="background:#2E7BC4;padding:6px 14px;border-radius:6px;font-size:9pt;font-weight:700;text-align:right;">FO-QMS-069<br><span style="font-size:7pt;font-weight:400;opacity:.8;">Indice D | 21/12/2018</span></div>
+</div>
+<div style="height:3px;background:#2E7BC4;margin-bottom:8px;"></div>
+
+<div style="background:#FFF8E1;border:1px solid #FFB300;border-left:4px solid #FFB300;border-radius:4px;padding:6px 10px;margin-bottom:8px;font-size:7.5pt;color:#7A5500;">
+  <strong>⚠ Cette fiche est à intégrer à tous ordres de fabrication</strong><br>
+  ATTENTION : LE CONTRÔLE EST A EFFECTUER PAR UN OPERATEUR DU MEME FLUX OU UN CONTROLEUR QUALITE.
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;border:1px solid #DADADA;border-radius:6px;overflow:hidden;margin-bottom:8px;">
+  <div style="padding:7px 10px;border-right:1px solid #DADADA;"><div style="font-size:7pt;font-weight:700;color:#2E7BC4;text-transform:uppercase;margin-bottom:3px;">Référence pièce</div><div style="font-size:10pt;font-weight:700;">${data.ref||'—'}</div></div>
+  <div style="padding:7px 10px;border-right:1px solid #DADADA;"><div style="font-size:7pt;font-weight:700;color:#2E7BC4;text-transform:uppercase;margin-bottom:3px;">N° OF</div><div style="font-size:10pt;font-weight:600;min-height:14pt;">${isTemplate?'':op.nof}</div></div>
+  <div style="padding:7px 10px;border-right:1px solid #DADADA;"><div style="font-size:7pt;font-weight:700;color:#2E7BC4;text-transform:uppercase;margin-bottom:3px;">Machine</div><div style="font-size:10pt;font-weight:600;min-height:14pt;">${isTemplate?'':op.machine}</div></div>
+  <div style="padding:7px 10px;"><div style="font-size:7pt;font-weight:700;color:#2E7BC4;text-transform:uppercase;margin-bottom:3px;">Cachet RH / LH</div><div style="font-size:10pt;font-weight:600;min-height:14pt;">${isTemplate?'':op.crh+' / '+op.clh}</div></div>
+</div>
+
+<div style="background:#E8F0FA;border:1px solid #2E7BC4;border-radius:6px;padding:8px 12px;margin-bottom:6px;display:flex;align-items:center;gap:10px;">
+  <div style="width:14px;height:14px;border:2px solid #2E7BC4;border-radius:3px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11pt;color:#2E7BC4;">${isTemplate?'':op.mal?'✓':''}</div>
+  <span style="font-size:9pt;font-weight:700;color:#1B4F8A;">Mise à longueur ${isTemplate?'':op.mal?'effectuée':'NON effectuée'}</span>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px;">
+  <div style="background:#FFF0F0;border:1.5px solid #DC3545;border-left:4px solid #DC3545;border-radius:6px;padding:7px 10px;">
+    <div style="font-size:7pt;font-weight:700;color:#DC3545;text-transform:uppercase;margin-bottom:2px;">À reprendre côté RH</div>
+    <div style="font-size:14pt;font-weight:700;color:#DC3545;">${isTemplate?'— mm':op.lngRH+' mm'}</div>
+  </div>
+  <div style="background:#FFF0F0;border:1.5px solid #DC3545;border-left:4px solid #DC3545;border-radius:6px;padding:7px 10px;">
+    <div style="font-size:7pt;font-weight:700;color:#DC3545;text-transform:uppercase;margin-bottom:2px;">À reprendre côté LH</div>
+    <div style="font-size:14pt;font-weight:700;color:#DC3545;">${isTemplate?'— mm':op.lngLH+' mm'}</div>
+  </div>
+</div>
+
+${section('RH')}
+${section('LH')}
+
+<div style="background:#FFF0F0;border:1px solid #DC3545;border-left:4px solid #DC3545;border-radius:4px;padding:6px 10px;margin-top:8px;text-align:center;font-size:8pt;font-weight:700;color:#DC3545;">
+  Attention – Contrôler votre fabrication en cours de production suivant IT-QMS-069
+</div>
+<div style="font-size:6.5pt;color:#AAAAAA;text-align:center;margin-top:5px;">
+  Ce document est la propriété de Technical Airborne Components Industries S.P.R.L. TAC. Il ne peut être utilisé ou communiqué sans autorisation préalable. Toute copie imprimée du réseau informatique est considérée « POUR INFORMATION » en date du 17/11/2022.
+</div>
+
+</div></body></html>`;
+
+  // Créer un blob et l'ouvrir dans un iframe caché pour impression
+  const blob = new Blob([html], {type:'text/html'});
+  const url  = URL.createObjectURL(blob);
+  
+  // Créer un lien de téléchargement en fallback
+  const a = document.createElement('a');
+  a.href = url;
+  const ref = (data.ref||'fiche').replace(/[^a-zA-Z0-9_-]/g,'_');
+  a.download = 'FO-QMS-069_' + ref + '.html';
+  
+  // Essayer window.open d'abord, sinon télécharger
+}
+</script>
+</body>
+</html>
