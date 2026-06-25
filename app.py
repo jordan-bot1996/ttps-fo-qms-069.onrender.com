@@ -30,8 +30,12 @@ WHITE  = colors.white
 BLACK  = colors.black
 
 def gen_pdf(data):
-    ref  = data.get('ref', 'REF')
-    plan = data.get('plan', {})
+    ref   = data.get('ref', 'REF')
+    plan  = data.get('plan', {})
+    op    = data.get('op', {})
+    mal   = op.get('mal', False)
+    lngRH = op.get('lngRH', '')
+    lngLH = op.get('lngLH', '')
     buf  = io.BytesIO()
     fields = []
     c = rl_canvas.Canvas(buf, pagesize=A4)
@@ -108,22 +112,29 @@ def gen_pdf(data):
         else:   fields.append((f"id_{i}",cx+1*mm,y-id_h+1.5*mm,iw-2*mm,id_h-5*mm,False,''))
     y-=id_h+4*mm
 
-    # MISE À LONGUEUR
+    # MISE À LONGUEUR — affichage fixe (pas de checkbox interactive)
     mal_h=10*mm
     box(ML,y-mal_h,PW,mal_h,BLUE_L,stroke=BLUE2,lw=0.6,radius=3)
+    # Case à cocher visuelle (non interactive)
     box(ML+3*mm,y-mal_h/2-3*mm,6*mm,6*mm,WHITE,stroke=BLUE2,lw=1.5)
-    txt(ML+12*mm,y-mal_h/2-2*mm,"Mise à longueur effectuée",9,True,BLUE)
-    fields.append(("mal_effectuee",ML+3*mm,y-mal_h/2-3*mm,6*mm,6*mm,"checkbox",''))
+    if mal:
+        c.setFillColor(BLUE2); c.setFont("Helvetica-Bold",10)
+        c.drawString(ML+4.5*mm, y-mal_h/2-1.5*mm, "✓")
+    mal_label = "Mise à longueur effectuée" if mal else "Mise à longueur NON effectuée"
+    txt(ML+12*mm,y-mal_h/2-2*mm, mal_label, 9, True, BLUE)
     y-=mal_h+3*mm
 
-    # LONGUEURS À REPRENDRE
+    # LONGUEURS À REPRENDRE — valeurs calculées inscrites en dur
     lr_h=13*mm; half=(PW-gap)/2
-    for i,side in enumerate(["RH","LH"]):
+    for i,(side,val) in enumerate([("RH", lngRH),("LH", lngLH)]):
         cx=ML+i*(half+gap)
         box(cx,y-lr_h,half,lr_h,RED_L,stroke=RED,lw=0.8,radius=3)
         box(cx,y-lr_h,3*mm,lr_h,RED,radius=2)
-        txt(cx+5*mm,y-5*mm,f"Longueur à reprendre côté {side} :",7.5,True,RED)
-        fields.append((f"lng_{side.lower()}",cx+5*mm,y-lr_h+1.5*mm,half-8*mm,lr_h/2,False,''))
+        txt(cx+5*mm,y-5.5*mm,f"Longueur à reprendre côté {side} :",7.5,True,RED)
+        # Afficher la valeur calculée en gros
+        val_str = f"{val} mm" if val and val != '—' else "— mm"
+        c.setFillColor(RED); c.setFont("Helvetica-Bold",13)
+        c.drawString(cx+5*mm, y-lr_h+3.5*mm, val_str)
     y-=lr_h+5*mm
 
     def section(y,side):
@@ -199,13 +210,15 @@ def gen_pdf(data):
                 NameObject("/FT"):      NameObject("/Btn"),
                 NameObject("/T"):       TextStringObject(name),
                 NameObject("/V"):       NameObject("/Off"),
+                NameObject("/AS"):      NameObject("/Off"),
                 NameObject("/DV"):      NameObject("/Off"),
                 NameObject("/Ff"):      NumberObject(0),
                 NameObject("/Rect"):    ArrayObject([NumberObject(r) for r in rect]),
-                NameObject("/DA"):      TextStringObject("/ZaDb 0 Tf 0 0 0 rg"),
+                NameObject("/DA"):      TextStringObject("/ZaDb 10 Tf 0 0 1 rg"),
                 NameObject("/F"):       NumberObject(4),
+                NameObject("/H"):       NameObject("/T"),
                 NameObject("/MK"):      DictionaryObject({
-                    NameObject("/CA"): TextStringObject("8"),
+                    NameObject("/CA"): TextStringObject("4"),
                     NameObject("/BG"): ArrayObject([NumberObject(1),NumberObject(1),NumberObject(1)]),
                     NameObject("/BC"): ArrayObject([NumberObject(0.18),NumberObject(0.31),NumberObject(0.54)]),
                 }),
@@ -239,6 +252,17 @@ def gen_pdf(data):
         NameObject("/NeedAppearances"): BooleanObject(True),
     })
     writer._root_object[NameObject("/AcroForm")]=writer._add_object(acroform)
+
+    # Protection PDF : remplissage autorisé, mais pas modification ni écrasement
+    # Permissions : bit 3 (print) + bit 10 (fill forms) actifs
+    # On encode en permissions PDF standard
+    writer.encrypt(
+        user_password="",       # Pas de mot de passe pour ouvrir/remplir
+        owner_password="ADMIN_TAC_2024",  # Mot de passe admin pour modifier
+        use_128bit=True,
+        permissions_flag=0b100000100100  # Print + FillForms uniquement
+    )
+
     out=io.BytesIO(); writer.write(out); out.seek(0)
     return out.read()
 
