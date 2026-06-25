@@ -564,10 +564,17 @@ function vn(id){const x=parseFloat(gi(id)?.value);return isNaN(x)?null:x;}
 
 function calcLng(){
   let rh=null,lh=null;
-  const ltP=vn('v-rh-lt')||vn('v-lh-lt');
-  const ltM=vn('m-rh-lt')||vn('m-lh-lt');
-  if(malFait){rh=2.00;if(ltP!==null&&ltM!==null)lh=ltM-ltP-2;}
-  else{if(ltP!==null&&ltM!==null){const x=(ltM-ltP)/2;rh=x;lh=x;}}
+  // ltP = longueur plan, ltM = longueur brute mesurée
+  const ltP=vn('v-rh-lt')||vn('v-lh-lt');   // cote plan
+  const ltM=vn('m-rh-lt')||vn('m-lh-lt');   // cote brute mesurée
+  if(malFait){
+    // Mise à longueur faite : RH = 2mm fixe, LH = brut mesuré - plan - 2mm déjà repris RH
+    rh=2.00;
+    if(ltP!==null&&ltM!==null) lh=ltM-ltP-2;
+  } else {
+    // Mise à longueur NON faite : RH = LH = (brut mesuré - plan) / 2
+    if(ltP!==null&&ltM!==null){const x=(ltM-ltP)/2; rh=x; lh=x;}
+  }
   const fmt=x=>x===null?'—<small> mm</small>':x.toFixed(2)+'<small> mm</small>';
   gi('lng-rh').innerHTML=fmt(rh);gi('lng-lh').innerHTML=fmt(lh);
 }
