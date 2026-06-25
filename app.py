@@ -114,14 +114,13 @@ def gen_pdf(data):
 
     # MAL supprimé à la demande
 
-    # LONGUEURS À REPRENDRE — valeurs calculées inscrites en dur
+    # LONGUEURS À REPRENDRE — valeurs saisies par l'opérateur
     lr_h=16*mm; half=(PW-gap)/2
     for i,(side,val) in enumerate([("RH", lngRH),("LH", lngLH)]):
         cx=ML+i*(half+gap)
-        # Cadre simple sans barre latérale
         box(cx,y-lr_h,half,lr_h,RED_L,stroke=RED,lw=1,radius=3)
         txt(cx+4*mm,y-5.5*mm,f"Longueur à reprendre côté {side} :",7.5,True,RED)
-        val_str = f"{val} mm" if val and val != '—' else "— mm"
+        val_str = val if val else "—"
         c.setFillColor(RED); c.setFont("Helvetica-Bold",14)
         c.drawString(cx+4*mm, y-lr_h+3.5*mm, val_str)
     y-=lr_h+5*mm
