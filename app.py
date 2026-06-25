@@ -140,18 +140,25 @@ def gen_pdf(data):
         cD=PW*0.21; cE=PW*0.055; cF=PW*0.055; cG=PW*0.13
         xA=ML; xB=xA+cA; xC=xB+cB; xD=xC+cC+sp; xE=xD+cD; xF=xE+cE; xG=xF+cF
 
+        # Colonnes : A=label | B=val.min | C=val.mes | SEP | D=label | E=cote plan | G=val.mes
+        # Pour angle : E=ang1 | F=ang2 | G=val.mes
         hh=10*mm
-        for x,w,t_ in [(xA,cA,"Type de contrôle"),(xB,cB,"Val. min. (mm)"),(xC,cC,"Val. mesurée (mm)"),
-                       (xD,cD,"Type de contrôle"),(xE,cE,"Ang.1 (°)"),(xF,cF,"Ang.2 (°)"),(xG,cG,"Val. mesurée")]:
-            hdr_cell(x,y-hh,w,hh,t_)
+        hdr_cell(xA,y-hh,cA,hh,"Type de contrôle")
+        hdr_cell(xB,y-hh,cB,hh,"Val. min. (mm)")
+        hdr_cell(xC,y-hh,cC,hh,"Val. mesurée (mm)")
         box(xC+cC,y-hh,sp,hh,WHITE)
+        hdr_cell(xD,y-hh,cD,hh,"Type de contrôle")
+        hdr_cell(xE,y-hh,cE+cF,hh,"Cote plan")
+        hdr_cell(xG,y-hh,cG,hh,"Val. mesurée")
         y-=hh
 
         rh1=26*mm
+        # Ø intérieur
         cell_lbl(xA,y-rh1,cA,rh1,["Ø intérieur (mm) svt OP-PRO-098","0,15 mm min. en dessous","du Ø d'alésage av. taraudage"],BLUE_L)
         field_plan(xB,y-rh1,cB,rh1,pm['di_min'],f"{s}_di_min_v")
         field_mes(xC,y-rh1,cC,rh1,f"{s}_di_mes")
         box(xC+cC,y-rh1,sp,rh1,WHITE)
+        # Long. plat rétreint + Longueur totale — une seule case "Cote plan"
         rh2=rh1/2
         for i,(lab,kp,km) in enumerate([("Long. plat rétreint (mm)","lpl",f"{s}_lpl_mes"),("Longueur totale (mm)","lt",f"{s}_lt_mes")]):
             ry=y-i*rh2
@@ -161,14 +168,21 @@ def gen_pdf(data):
         y-=rh1
 
         rh3=16*mm
+        # Ø extérieur
         cell_lbl(xA,y-rh3,cA,rh3,["Ø extérieur (mm)"],BLUE_LL)
         field_plan(xB,y-rh3,cB,rh3,pm['de_min'],f"{s}_de_min_v")
         field_mes(xC,y-rh3,cC,rh3,f"{s}_de_mes")
         box(xC+cC,y-rh3,sp,rh3,WHITE)
+        # Angle : subdiviser "Cote plan" en 2 (ang1 | ang2)
         cell_lbl(xD,y-rh3,cD,rh3,["Angle de rétreint (°)"],BLUE_LL)
-        field_plan(xE,y-rh3,cE,rh3,pm['ang1'],f"{s}_ang1_v")
-        field_plan(xF,y-rh3,cF,rh3,pm['ang2'],f"{s}_ang2_v")
+        ang_w=(cE+cF)/2
+        field_plan(xE,        y-rh3,ang_w,rh3,pm['ang1'],f"{s}_ang1_v")
+        field_plan(xE+ang_w,  y-rh3,ang_w,rh3,pm['ang2'],f"{s}_ang2_v")
         field_mes(xG,y-rh3,cG,rh3,f"{s}_ang_mes")
+        # Labels Ang.1 / Ang.2 en petit
+        c.setFillColor(colors.HexColor("#6C757D")); c.setFont("Helvetica",6)
+        c.drawString(xE+1*mm,       y-rh3+2*mm, "Ang.1")
+        c.drawString(xE+ang_w+1*mm, y-rh3+2*mm, "Ang.2")
         y-=rh3
         return y
 
