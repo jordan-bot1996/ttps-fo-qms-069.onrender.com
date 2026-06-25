@@ -68,7 +68,7 @@ def gen_pdf(data):
 
     def cell_lbl(x,y,w,h,lines,bg):
         box(x,y,w,h,bg,stroke=STROKE,lw=0.3)
-        c.setFillColor(BLACK); c.setFont("Helvetica",7.5)
+        c.setFillColor(BLACK); c.setFont("Helvetica",8.5)
         total=len(lines)*4*mm; sy=y+h/2+total/2-3.5*mm
         for i,ln in enumerate(lines): c.drawString(x+2*mm,sy-i*4*mm,ln)
 
@@ -79,7 +79,7 @@ def gen_pdf(data):
         c.drawString(x+(w-tw)/2,y+h/2-2.5*mm,s)
 
     # EN-TÊTE
-    y=H-12*mm; bh=22*mm
+    y=H-12*mm; bh=18*mm
     box(0,y-bh,W,bh,BLUE); box(0,y-bh,4*mm,bh,BLUE2)
     txt(ML+3*mm,y-bh/2-4*mm,"TAC",20,True,WHITE)
     box(ML+3*mm,y-bh/2-7*mm,20*mm,1.5*mm,BLUE2)
@@ -94,7 +94,7 @@ def gen_pdf(data):
     y-=bh; box(0,y-2*mm,W,2*mm,BLUE2); y-=2*mm+4*mm
 
     # AVERTISSEMENT
-    ah=11*mm
+    ah=10*mm
     box(ML,y-ah,PW,ah,WARN_L,stroke=WARN_S,lw=0.8,radius=3)
     box(ML,y-ah,3*mm,ah,WARN_S,radius=2)
     txt(ML+5*mm,y-4.5*mm,"⚠  Cette fiche est à intégrer à tous ordres de fabrication",7.5,True,colors.HexColor("#7A5500"))
@@ -102,7 +102,7 @@ def gen_pdf(data):
     y-=ah+4*mm
 
     # IDENTIFICATION
-    id_h=10*mm; gap=3*mm; iw=(PW-3*gap)/4
+    id_h=12*mm; gap=3*mm; iw=(PW-3*gap)/4
     for i,(lbl,val) in enumerate([("Référence pièce",ref),("N° OF",None),("Machine utilisée",None),("Cachet RH / LH",None)]):
         cx=ML+i*(iw+gap)
         box(cx,y-id_h,iw,id_h,GREY_L,stroke=STROKE,lw=0.4,radius=3)
@@ -112,20 +112,10 @@ def gen_pdf(data):
         else:   fields.append((f"id_{i}",cx+1*mm,y-id_h+1.5*mm,iw-2*mm,id_h-5*mm,False,''))
     y-=id_h+4*mm
 
-    # MISE À LONGUEUR — affichage fixe (pas de checkbox interactive)
-    mal_h=10*mm
-    box(ML,y-mal_h,PW,mal_h,BLUE_L,stroke=BLUE2,lw=0.6,radius=3)
-    # Case à cocher visuelle (non interactive)
-    box(ML+3*mm,y-mal_h/2-3*mm,6*mm,6*mm,WHITE,stroke=BLUE2,lw=1.5)
-    if mal:
-        c.setFillColor(BLUE2); c.setFont("Helvetica-Bold",10)
-        c.drawString(ML+4.5*mm, y-mal_h/2-1.5*mm, "✓")
-    mal_label = "Mise à longueur effectuée" if mal else "Mise à longueur NON effectuée"
-    txt(ML+12*mm,y-mal_h/2-2*mm, mal_label, 9, True, BLUE)
-    y-=mal_h+3*mm
+    # MAL supprimé à la demande
 
     # LONGUEURS À REPRENDRE — valeurs calculées inscrites en dur
-    lr_h=13*mm; half=(PW-gap)/2
+    lr_h=16*mm; half=(PW-gap)/2
     for i,(side,val) in enumerate([("RH", lngRH),("LH", lngLH)]):
         cx=ML+i*(half+gap)
         box(cx,y-lr_h,half,lr_h,RED_L,stroke=RED,lw=0.8,radius=3)
@@ -140,9 +130,9 @@ def gen_pdf(data):
     def section(y,side):
         s=side.lower()
         pm={k:plan.get(f'{s}_{k}','') for k in ['di_min','lpl','lt','de_min','ang1','ang2']}
-        sh=9*mm
+        sh=10*mm
         box(ML,y-sh,PW,sh,BLUE,radius=4); box(ML+PW-11*mm,y-sh,9*mm,sh,BLUE2,radius=3)
-        c.setFont("Helvetica-Bold",11); c.setFillColor(WHITE)
+        c.setFont("Helvetica-Bold",12); c.setFillColor(WHITE)
         t=f"Rétreint côté {side}"
         c.drawString(ML+(PW-c.stringWidth(t,"Helvetica-Bold",11))/2,y-sh/2-3*mm,t)
         y-=sh+1*mm
@@ -151,42 +141,42 @@ def gen_pdf(data):
         cD=PW*0.21; cE=PW*0.055; cF=PW*0.055; cG=PW*0.13
         xA=ML; xB=xA+cA; xC=xB+cB; xD=xC+cC+sp; xE=xD+cD; xF=xE+cE; xG=xF+cF
 
-        hh=8*mm
-        for x,w,t_ in [(xA,cA,"Type de contrôle"),(xB,cB,"Val. min."),(xC,cC,"Val. mesurée"),
-                       (xD,cD,"Type de contrôle"),(xE,cE,"Ang.1"),(xF,cF,"Ang.2"),(xG,cG,"Val. mesurée")]:
+        hh=10*mm
+        for x,w,t_ in [(xA,cA,"Type de contrôle"),(xB,cB,"Val. min. (mm)"),(xC,cC,"Val. mesurée (mm)"),
+                       (xD,cD,"Type de contrôle"),(xE,cE,"Ang.1 (°)"),(xF,cF,"Ang.2 (°)"),(xG,cG,"Val. mesurée")]:
             hdr_cell(x,y-hh,w,hh,t_)
-        box(xC+cC,y-hh,sp,hh,BLUE)
+        box(xC+cC,y-hh,sp,hh,WHITE)
         y-=hh
 
-        rh1=20*mm
-        cell_lbl(xA,y-rh1,cA,rh1,["Ø intérieur svt OP-PRO-098","0,15 mm min. en dessous","du Ø d'alésage av. taraudage"],BLUE_L)
+        rh1=26*mm
+        cell_lbl(xA,y-rh1,cA,rh1,["Ø intérieur (mm) svt OP-PRO-098","0,15 mm min. en dessous","du Ø d'alésage av. taraudage"],BLUE_L)
         field_plan(xB,y-rh1,cB,rh1,pm['di_min'],f"{s}_di_min_v")
         field_mes(xC,y-rh1,cC,rh1,f"{s}_di_mes")
-        box(xC+cC,y-rh1,sp,rh1,colors.HexColor("#EFEFEF"))
+        box(xC+cC,y-rh1,sp,rh1,WHITE)
         rh2=rh1/2
-        for i,(lab,kp,km) in enumerate([("Long. plat rétreint","lpl",f"{s}_lpl_mes"),("Longueur totale","lt",f"{s}_lt_mes")]):
+        for i,(lab,kp,km) in enumerate([("Long. plat rétreint (mm)","lpl",f"{s}_lpl_mes"),("Longueur totale (mm)","lt",f"{s}_lt_mes")]):
             ry=y-i*rh2
             cell_lbl(xD,ry-rh2,cD,rh2,[lab],BLUE_L)
             field_plan(xE,ry-rh2,cE+cF,rh2,pm[kp],f"{s}_{kp}_v")
             field_mes(xG,ry-rh2,cG,rh2,km)
         y-=rh1
 
-        rh3=12*mm
-        cell_lbl(xA,y-rh3,cA,rh3,["Ø extérieur"],BLUE_LL)
+        rh3=16*mm
+        cell_lbl(xA,y-rh3,cA,rh3,["Ø extérieur (mm)"],BLUE_LL)
         field_plan(xB,y-rh3,cB,rh3,pm['de_min'],f"{s}_de_min_v")
         field_mes(xC,y-rh3,cC,rh3,f"{s}_de_mes")
-        box(xC+cC,y-rh3,sp,rh3,colors.HexColor("#EFEFEF"))
-        cell_lbl(xD,y-rh3,cD,rh3,["Angle de rétreint"],BLUE_LL)
+        box(xC+cC,y-rh3,sp,rh3,WHITE)
+        cell_lbl(xD,y-rh3,cD,rh3,["Angle de rétreint (°)"],BLUE_LL)
         field_plan(xE,y-rh3,cE,rh3,pm['ang1'],f"{s}_ang1_v")
         field_plan(xF,y-rh3,cF,rh3,pm['ang2'],f"{s}_ang2_v")
         field_mes(xG,y-rh3,cG,rh3,f"{s}_ang_mes")
         y-=rh3
         return y
 
-    y=section(y,"RH"); y-=5*mm
-    y=section(y,"LH"); y-=5*mm
+    y=section(y,"RH"); y-=6*mm
+    y=section(y,"LH"); y-=6*mm
 
-    ph=8*mm
+    ph=9*mm
     box(ML,y-ph,PW,ph,RED_L,stroke=RED,lw=0.6,radius=3)
     box(ML,y-ph,3*mm,ph,RED,radius=2)
     msg="Attention – Contrôler votre fabrication en cours de production suivant IT-QMS-069"
