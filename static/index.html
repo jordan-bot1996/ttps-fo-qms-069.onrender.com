@@ -327,14 +327,16 @@ body { font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; background:#EEF2
     </div>
 
     <div class="section-card">
-      <div class="section-head">Mise à longueur</div>
-      <div class="mal-row" onclick="toggleMAL()">
-        <div class="cb-box" id="mal-cb"></div>
-        <div class="mal-text">Mise à longueur effectuée</div>
-      </div>
+      <div class="section-head">Longueur à reprendre</div>
       <div class="lng-row">
-        <div class="lng-cell"><div class="lng-label">À reprendre côté RH</div><div class="lng-val" id="lng-rh">—<small> mm</small></div></div>
-        <div class="lng-cell"><div class="lng-label">À reprendre côté LH</div><div class="lng-val" id="lng-lh">—<small> mm</small></div></div>
+        <div class="lng-cell">
+          <div class="lng-label">Côté RH</div>
+          <input class="field-input" id="lng-rh-input" type="text" placeholder="ex: 2 mm" style="font-size:18px;font-weight:700;color:var(--red);border-bottom:2px solid var(--red);padding:4px 0;width:100%;">
+        </div>
+        <div class="lng-cell">
+          <div class="lng-label">Côté LH</div>
+          <input class="field-input" id="lng-lh-input" type="text" placeholder="ex: 3.5 mm" style="font-size:18px;font-weight:700;color:var(--red);border-bottom:2px solid var(--red);padding:4px 0;width:100%;">
+        </div>
       </div>
     </div>
 
@@ -551,10 +553,8 @@ function selRef(id){
   gi('op-title').textContent=r.ref;
   sv('v-rh-di-min',p.rh_di_min);sv('v-rh-lpl',p.rh_lpl);sv('v-rh-lt',p.rh_lt);sv('v-rh-de-min',p.rh_de_min);sv('v-rh-ang1',p.rh_ang1);sv('v-rh-ang2',p.rh_ang2);
   sv('v-lh-di-min',p.lh_di_min);sv('v-lh-lpl',p.lh_lpl);sv('v-lh-lt',p.lh_lt);sv('v-lh-de-min',p.lh_de_min);sv('v-lh-ang1',p.lh_ang1);sv('v-lh-ang2',p.lh_ang2);
-  ['op-nof','op-machine','op-crh','op-clh','m-rh-di','m-rh-lpl','m-rh-lt','m-rh-de','m-rh-ang','m-lh-di','m-lh-lpl','m-lh-lt','m-lh-de','m-lh-ang']
+  ['op-nof','op-machine','op-crh','op-clh','m-rh-di','m-rh-lpl','m-rh-lt','m-rh-de','m-rh-ang','m-lh-di','m-lh-lpl','m-lh-lt','m-lh-de','m-lh-ang','lng-rh-input','lng-lh-input']
     .forEach(id=>sv(id,''));
-  malFait=false;gi('mal-cb').classList.remove('on');
-  gi('lng-rh').innerHTML='—<small> mm</small>';gi('lng-lh').innerHTML='—<small> mm</small>';
   go('screen-op-form');
 }
 
@@ -580,17 +580,15 @@ function calcLng(){
 }
 
 function resetOp(){
-  ['op-nof','op-machine','op-crh','op-clh','m-rh-di','m-rh-lpl','m-rh-lt','m-rh-de','m-rh-ang','m-lh-di','m-lh-lpl','m-lh-lt','m-lh-de','m-lh-ang']
+  ['op-nof','op-machine','op-crh','op-clh','m-rh-di','m-rh-lpl','m-rh-lt','m-rh-de','m-rh-ang','m-lh-di','m-lh-lpl','m-lh-lt','m-lh-de','m-lh-ang','lng-rh-input','lng-lh-input']
     .forEach(id=>sv(id,''));
-  malFait=false;gi('mal-cb').classList.remove('on');
-  gi('lng-rh').innerHTML='—<small> mm</small>';gi('lng-lh').innerHTML='—<small> mm</small>';
   toast('✓ Effacé');
 }
 
 async function exportPDF(){
   const refs=db(); const r=refs.find(x=>x.id===curId)||{};
-  const lRH=gi('lng-rh').textContent.replace('mm','').trim();
-  const lLH=gi('lng-lh').textContent.replace('mm','').trim();
+  const lRH=gi('lng-rh-input').value.trim();
+  const lLH=gi('lng-lh-input').value.trim();
   const payload={...r, op:{
     nof:gv('op-nof'),machine:gv('op-machine'),crh:gv('op-crh'),clh:gv('op-clh'),
     rh:{di:gv('m-rh-di'),lpl:gv('m-rh-lpl'),lt:gv('m-rh-lt'),de:gv('m-rh-de'),ang:gv('m-rh-ang')},
